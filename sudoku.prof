@@ -1,0 +1,173 @@
+	Sun Apr  5 00:25 2015 Time and Allocation Profiling Report  (Final)
+
+	   sudoku +RTS -p -RTS
+
+	total time  =        0.16 secs   (157 ticks @ 1000 us, 1 processor)
+	total alloc = 210,172,864 bytes  (excludes profiling overheads)
+
+COST CENTRE            MODULE    %time %alloc
+
+allDiff.allDiffCases.\ Main       26.1   16.2
+updateOne.(...)        Main       23.6   34.4
+lookupDomain           Main       11.5    0.0
+updateOne              Main        7.6   16.7
+domainFromList         Main        6.4    2.7
+fanout.\               Main        5.7   11.6
+fanout                 Main        5.1    5.3
+propagate.validDomains Main        4.5    4.2
+_combinations.out'     Main        1.9    4.0
+propagate              Main        1.3    1.2
+propagate.(...)        Main        1.3    0.6
+allDiff.allDiffCases   Main        1.3    0.0
+values                 Main        1.3    0.7
+
+
+                                                                             individual     inherited
+COST CENTRE                        MODULE                  no.     entries  %time %alloc   %time %alloc
+
+MAIN                               MAIN                     45           0    0.0    0.0   100.0  100.0
+ CAF                               Main                     89           0    0.0    0.0   100.0  100.0
+  combinations                     Main                    192           1    0.0    0.0     0.0    0.0
+  freshDomain                      Main                    184           1    0.0    0.0     0.0    0.0
+  flatten                          Main                    126           1    0.0    0.0     0.0    0.0
+  blocks                           Main                    123           1    0.0    0.0     0.0    0.0
+  cols                             Main                    116           1    0.0    0.0     0.0    0.0
+  inputgame                        Main                    113           1    0.0    0.0     0.0    0.0
+  game                             Main                    111           1    0.0    0.0     0.0    0.0
+   parseGame                       Main                    112           1    0.0    0.0     0.0    0.0
+    ps                             Main                    183          81    0.0    0.0     0.0    0.0
+  vars                             Main                    108           1    0.0    0.0     0.0    0.0
+  rows                             Main                     95           1    0.0    0.0     0.0    0.0
+  putG                             Main                     91           1    0.0    0.0     0.0    0.0
+  main                             Main                     90           1    0.0    0.0   100.0  100.0
+   solveGame                       Main                     98           1    0.0    0.0   100.0   99.9
+    solveGame.constraints          Main                    102           1    0.0    0.0     0.0    0.2
+     constrain                     Main                    103           1    0.0    0.0     0.0    0.2
+      _arcConstrain                Main                    136           1    0.0    0.0     0.0    0.2
+       blocks                      Main                    153           0    0.0    0.0     0.0    0.0
+        rows                       Main                    156           0    0.0    0.0     0.0    0.0
+         splitInto                 Main                    157          10    0.0    0.0     0.0    0.0
+          splitInto.first          Main                    163           9    0.0    0.0     0.0    0.0
+          splitInto.(...)          Main                    161           9    0.0    0.0     0.0    0.0
+          splitInto.rest           Main                    160           9    0.0    0.0     0.0    0.0
+        flatten                    Main                    155           0    0.0    0.0     0.0    0.0
+        splitInto                  Main                    154          14    0.0    0.0     0.0    0.0
+         splitInto.first           Main                    162          12    0.0    0.0     0.0    0.0
+         splitInto.(...)           Main                    159          12    0.0    0.0     0.0    0.0
+         splitInto.rest            Main                    158          12    0.0    0.0     0.0    0.0
+       cols                        Main                    147           0    0.0    0.0     0.0    0.0
+        rows                       Main                    148           0    0.0    0.0     0.0    0.0
+         splitInto                 Main                    149          10    0.0    0.0     0.0    0.0
+          splitInto.rest           Main                    152           9    0.0    0.0     0.0    0.0
+          splitInto.(...)          Main                    151           9    0.0    0.0     0.0    0.0
+          splitInto.first          Main                    150           9    0.0    0.0     0.0    0.0
+       arcConstraints              Main                    142         243    0.0    0.1     0.0    0.1
+        arcConstraint              Main                    168         972    0.0    0.0     0.0    0.0
+        arcConstraints.pairs       Main                    145         216    0.0    0.0     0.0    0.0
+       _arcConstrain.var           Main                    139           1    0.0    0.0     0.0    0.0
+        vars                       Main                    140           0    0.0    0.0     0.0    0.0
+         varify                    Main                    141           1    0.0    0.0     0.0    0.0
+       rows                        Main                    137           0    0.0    0.0     0.0    0.0
+        splitInto                  Main                    138          10    0.0    0.0     0.0    0.0
+         splitInto.rest            Main                    146           9    0.0    0.0     0.0    0.0
+         splitInto.(...)           Main                    144           9    0.0    0.0     0.0    0.0
+         splitInto.first           Main                    143           9    0.0    0.0     0.0    0.0
+      _adConstrain                 Main                    104           1    0.0    0.0     0.0    0.0
+       blocks                      Main                    124           0    0.0    0.0     0.0    0.0
+        rows                       Main                    128           0    0.0    0.0     0.0    0.0
+         splitInto                 Main                    129          10    0.0    0.0     0.0    0.0
+          splitInto.first          Main                    135           9    0.0    0.0     0.0    0.0
+          splitInto.(...)          Main                    133           9    0.0    0.0     0.0    0.0
+          splitInto.rest           Main                    132           9    0.0    0.0     0.0    0.0
+        flatten                    Main                    127           0    0.0    0.0     0.0    0.0
+        splitInto                  Main                    125          14    0.0    0.0     0.0    0.0
+         splitInto.first           Main                    134          12    0.0    0.0     0.0    0.0
+         splitInto.(...)           Main                    131          12    0.0    0.0     0.0    0.0
+         splitInto.rest            Main                    130          12    0.0    0.0     0.0    0.0
+       cols                        Main                    117           0    0.0    0.0     0.0    0.0
+        rows                       Main                    118           0    0.0    0.0     0.0    0.0
+         splitInto                 Main                    119          10    0.0    0.0     0.0    0.0
+          splitInto.rest           Main                    122           9    0.0    0.0     0.0    0.0
+          splitInto.(...)          Main                    121           9    0.0    0.0     0.0    0.0
+          splitInto.first          Main                    120           9    0.0    0.0     0.0    0.0
+       _adConstrain.var            Main                    107           1    0.0    0.0     0.0    0.0
+        vars                       Main                    109           0    0.0    0.0     0.0    0.0
+         varify                    Main                    110           1    0.0    0.0     0.0    0.0
+       rows                        Main                    105           0    0.0    0.0     0.0    0.0
+        splitInto                  Main                    106          10    0.0    0.0     0.0    0.0
+         splitInto.first           Main                    182           9    0.0    0.0     0.0    0.0
+         splitInto.(...)           Main                    115           9    0.0    0.0     0.0    0.0
+         splitInto.rest            Main                    114           9    0.0    0.0     0.0    0.0
+    solve                          Main                     99           7    0.0    0.0   100.0   99.7
+     ==                            Main                    187         169    0.0    0.0     0.0    0.0
+     solve.result                  Main                    100           7    0.0    0.0   100.0   99.7
+      propagateConstraints         Main                    101        7000    0.6    0.2   100.0   99.7
+       propagateConstraints.u      Main                    166        6993    0.0    0.0    67.5   48.2
+        propagate                  Main                    167        6993    1.3    1.2    67.5   48.2
+         propagate.da              Main                    201        6804    0.0    0.0     1.9    0.0
+          lookupDomain             Main                    202        6804    1.9    0.0     1.9    0.0
+         propagate.db'             Main                    199        6804    0.0    0.0     0.0    0.0
+         propagate.db              Main                    197        6804    0.0    0.0     8.9    0.0
+          lookupDomain             Main                    198        6804    8.9    0.0     8.9    0.0
+         propagate.validDomains    Main                    190        6804    4.5    4.2    10.2   11.3
+          neq                      Main                    203       33932    0.6    0.0     0.6    0.0
+          instantiations           Main                    191        6804    0.0    0.6     5.1    7.1
+           values                  Main                    196       13608    1.3    0.7     1.3    0.7
+           combinations            Main                    193           0    0.0    0.0     3.8    5.8
+            _combinations          Main                    194       20412    0.0    0.2     3.8    5.8
+             _combinations.out'    Main                    195       13608    1.3    2.0     3.8    5.5
+              fanout               Main                    200       26196    1.9    2.1     2.5    3.6
+               fanout.\            Main                    204       46080    0.6    1.4     0.6    1.4
+         propagate.(...)           Main                    189        6804    1.3    0.6     7.6    3.0
+          domainFromList           Main                    205       13608    6.4    2.5     6.4    2.5
+         propagate.da'             Main                    188        6804    0.6    0.0     0.6    0.0
+         propagate.domains         Main                    178         189    0.0    0.1     0.6    0.1
+          lookupDomain             Main                    181        1701    0.6    0.0     0.6    0.0
+         propagate.(...)           Main                    177         189    0.0    0.2     0.0    0.2
+          propagate.(...).\        Main                    179        1701    0.0    0.0     0.0    0.0
+           isSingleton             Main                    180        1701    0.0    0.0     0.0    0.0
+         propagate.vars            Main                    176         189    0.0    0.0     0.0    0.0
+         propagate.diffed          Main                    173         189    0.0    0.0    36.3   32.4
+          allDiff                  Main                    174         189    0.0    0.1    36.3   32.4
+           allDiff.\               Main                    220         436    0.0    0.0     0.0    0.0
+           allDiff.domains         Main                    213         105    0.0    0.0     0.0    0.0
+            allDiff.domains.\      Main                    216         436    0.0    0.0     0.0    0.0
+           allDiff.cases           Main                    209         105    0.0    0.0     8.9   15.4
+            instantiations         Main                    210         105    0.0    0.0     8.9   15.4
+             values                Main                    215         436    0.0    0.0     0.0    0.0
+             combinations          Main                    211           0    0.0    0.0     8.9   15.4
+              _combinations        Main                    212         541    0.0    0.0     8.9   15.4
+               _combinations.out'  Main                    214         436    0.6    2.1     8.9   15.4
+                fanout             Main                    217        1287    3.2    3.2     8.3   13.3
+                 fanout.\          Main                    219       76025    5.1   10.1     5.1   10.1
+           allDiff.allDiffCases    Main                    208         105    1.3    0.0    27.4   16.2
+            allDiff.allDiffCases.\ Main                    218       53269   26.1   16.2    26.1   16.2
+           allDiff.domainLists     Main                    207         105    0.0    0.3     0.0    0.3
+           allDiff.newDomains      Main                    206         105    0.0    0.0     0.0    0.3
+            domainFromList         Main                    221         436    0.0    0.3     0.0    0.3
+           allDiff.combinations    Main                    175         189    0.0    0.1     0.0    0.1
+            allDiff.combinations.\ Main                    185         659    0.0    0.0     0.0    0.0
+       propagateConstraints.game'  Main                    164        6993    0.0    0.0    31.8   51.3
+        update                     Main                    165       21260    0.6    0.2    31.8   51.3
+         update.game'              Main                    169       14267    0.0    0.0    31.2   51.1
+          updateOne                Main                    170       14267    7.6   16.7    31.2   51.1
+           updateOne.post          Main                    186       14267    0.0    0.0     0.0    0.0
+           updateOne.(...)         Main                    172       14267   23.6   34.4    23.6   34.4
+           updateOne.pre           Main                    171       14267    0.0    0.0     0.0    0.0
+   putG                            Main                     92           0    0.0    0.0     0.0    0.0
+    showG                          Main                     93           1    0.0    0.0     0.0    0.0
+     showG.showRow                 Main                    222           1    0.0    0.0     0.0    0.0
+      showG.showRow.\              Main                    223           9    0.0    0.0     0.0    0.0
+       strD                        Main                    226          81    0.0    0.0     0.0    0.0
+        strD.size                  Main                    227          81    0.0    0.0     0.0    0.0
+     showG.rows'                   Main                     94           1    0.0    0.0     0.0    0.0
+      rows                         Main                     96           0    0.0    0.0     0.0    0.0
+       splitInto                   Main                     97          10    0.0    0.0     0.0    0.0
+        splitInto.rest             Main                    228           9    0.0    0.0     0.0    0.0
+        splitInto.(...)            Main                    225           9    0.0    0.0     0.0    0.0
+        splitInto.first            Main                    224           9    0.0    0.0     0.0    0.0
+ CAF                               GHC.Conc.Signal          84           0    0.0    0.0     0.0    0.0
+ CAF                               GHC.IO.Encoding          78           0    0.0    0.0     0.0    0.0
+ CAF                               GHC.IO.Encoding.Iconv    76           0    0.0    0.0     0.0    0.0
+ CAF                               GHC.IO.Handle.FD         69           0    0.0    0.0     0.0    0.0
+ CAF                               GHC.IO.Handle.Text       67           0    0.0    0.0     0.0    0.0
