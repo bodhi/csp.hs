@@ -10,13 +10,13 @@ import CSP
 type Row = Int
 type Col = Int
 
-data Sudoku = Sudoku (Map.Map Variable (Domain Int)) deriving Eq
+data Sudoku = Sudoku (Map.Map Variable (Set.Set Int)) deriving Eq
 
 --type Sudoku = Sudoku' Int
 
 -- class Game a b where
---   lookup :: a -> Variable -> Domain b
---   updateGame :: (Variable,Domain b) -> a -> a
+--   lookup :: a -> Variable -> Set.Set b
+--   updateGame :: (Variable,Set.Set b) -> a -> a
 
 instance Game Int Sudoku  where
   lookupVariable (Sudoku map) variable = map Map.! variable
@@ -83,7 +83,7 @@ solveGame game = let constraints = constrain game
 vars :: Sudoku -> [Variable]
 vars (Sudoku map) = Map.keys map
 
-varify :: Int -> [Domain Int] -> [Variable]
+varify :: Int -> [Set.Set Int] -> [Variable]
 varify i game = map (Variable . Location)  [i..length game + i - 1]
 
 --------
@@ -95,11 +95,11 @@ setDomain = Set.fromList [4]
 inputrow :: [Maybe Int]
 inputrow = [Just 1, Nothing, Nothing, Just 7, Just 3, Nothing, Nothing, Nothing, Nothing]
 
-parseCell :: Maybe Int -> Domain Int
+parseCell :: Maybe Int -> Set.Set Int
 parseCell Nothing = freshDomain
 parseCell (Just x) = Set.singleton x
 
-parse :: [Maybe Int] -> [Domain Int]
+parse :: [Maybe Int] -> [Set.Set Int]
 parse x = map parseCell x
 
 inputgame = "1..73....\
@@ -112,7 +112,7 @@ inputgame = "1..73....\
 \...5.....\
 \53....6.."
 
-ps :: Char -> Domain Int
+ps :: Char -> Set.Set Int
 ps '.' = freshDomain
 ps x = Set.singleton . Data.Char.digitToInt $ x
 
@@ -127,7 +127,7 @@ parseGame s =
 
 game = parseGame inputgame
 
-strD :: Domain Int -> Char
+strD :: Set.Set Int -> Char
 strD d
   | size == 1 = head $ show $ head $ Set.elems d
   | otherwise = '.'

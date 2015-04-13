@@ -5,7 +5,6 @@ module CSP (
   Variable(Variable),
   Location(Location),
   Game(lookupVariable,updateGame),
-  Domain,
   Constraint(Alldiff,ArcConstraint)
   ) where
 
@@ -22,24 +21,15 @@ data Constraint a = ArcConstraint Variable Variable ([a] -> Bool)
                 | KConsistent Variable ([a] -> Bool)
                 | Alldiff [Variable]
 
-type Domain = Set.Set
-
--- data Domain a = Domain (Set.Set a)
---             | Empty
---             deriving (Show, Eq)
-
-
 class Game a b where
-  lookupVariable :: b -> Variable -> Domain a
-  updateGame :: (Variable,Domain a) -> b -> b
-
---type Game a = Map.Map Variable (Domain a)
-
-
+  lookupVariable :: b -> Variable -> Set.Set a
+  updateGame :: (Variable,Set.Set a) -> b -> b
 
 instance Show (Constraint a) where
   show (ArcConstraint d e _) = "<ArcConstraint " ++ (show d) ++ " & " ++ (show e) ++ ">"
   show (Alldiff d) = "<Alldiff constraint " ++ (show d) ++ ">"
+
+----
 
 -- fanOut [[1,2,3], [2,3,4]] 5 = [[1,2,3,5], [2,3,4,5]]
 fanout :: [[a]] -> a -> [[a]]
@@ -54,21 +44,18 @@ _combinations out (i:is) =
 combinations :: [[a]] -> [[a]]
 combinations = _combinations [[]]
 
-values :: Set.Set a -> [a]
-values = Set.elems
-
-instantiations :: [Domain a] -> [[a]]
-instantiations domains = combinations $ map values domains
+instantiations :: [Set.Set a] -> [[a]]
+instantiations domains = combinations $ map Set.elems domains
 
 
-type Update a = [(Variable,Domain a)]
+type Update a = [(Variable,Set.Set a)]
 
 propagate :: (Game a game, Ord a) => Constraint a -> game -> Update a
 propagate (ArcConstraint va vb fn) game =
   let da = CSP.lookupVariable game va
       db = CSP.lookupVariable game vb
       validDomains = L.transpose $ filter fn $ instantiations [da, db]
-      (da':db':[]) = map domainFromList validDomains
+      (da':db':[]) = map Set.fromList validDomains
   in [(va, da'), (vb, db')]
 
 propagate (Alldiff variables) game =
@@ -112,10 +99,6 @@ propagateConstraints [] game = game
 propagateConstraints (c:cs) game = let u = propagate c game
                                        game' = update game u
                                    in propagateConstraints cs game'
-
-domainFromList :: Ord a => [a] -> Domain a
-domainFromList [] = Set.empty
-domainFromList x = Set.fromList x
 
 update :: Game a game => game -> Update a -> game
 update game [] = game
