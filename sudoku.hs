@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses,TypeSynonymInstances #-}
 
 import Data.List as List
 import qualified Data.Map.Strict as Map
@@ -10,28 +10,27 @@ import CSP
 type Row = Int
 type Col = Int
 
-data Sudoku = Sudoku (Map.Map Variable (Set.Set Int)) deriving Eq
+type Location = Int
 
---type Sudoku = Sudoku' Int
+data Sudoku = Sudoku (Map.Map Location (Set.Set Int)) deriving Eq
 
 -- class Game a b where
 --   lookup :: a -> Variable -> Set.Set b
 --   updateGame :: (Variable,Set.Set b) -> a -> a
 
-instance Game Int Sudoku  where
+instance Game Int Sudoku Location where
   lookupVariable (Sudoku map) variable = map Map.! variable
   updateGame (variable,domain) (Sudoku map) = Sudoku $ Map.insert variable domain map
-
 
 neq :: [Int] -> Bool
 neq (x:y:[]) = x /= y
 
-arcConstraints :: [Variable] -> [Constraint Int]
+arcConstraints :: [Location] -> [Constraint Location Int]
 arcConstraints (d:[]) = []
 arcConstraints (d:ds) = let pairs = [(d, x) | x <- ds]
                         in map arcConstraint pairs ++ arcConstraints ds
 
-arcConstraint :: (Variable, Variable) -> Constraint Int
+arcConstraint :: (Location, Location) -> Constraint Location Int
 arcConstraint (a, b) = ArcConstraint a b neq
 
 -------
@@ -56,7 +55,7 @@ splitInto i a = let (first,rest) = splitAt i a
 flatten :: [[a]] -> [a]
 flatten = foldl (++) []
 
-constrain :: Sudoku -> [Constraint a]
+constrain :: Sudoku -> [Constraint Location Int]
 constrain game = _adConstrain game -- ++ _adConstrain game
 _adConstrain game = let var = vars game
              in map Alldiff (rows var ++ cols var ++ blocks var)
@@ -67,7 +66,7 @@ _arcConstrain game = let var = vars game
 
 ----------
 
-solve :: [Constraint Int] -> Sudoku -> Sudoku
+solve :: [Constraint Location Int] -> Sudoku -> Sudoku
 solve constraints game
   | result == game = game
   | otherwise = solve constraints result
@@ -80,11 +79,11 @@ solveGame game = let constraints = constrain game
 
 -------------------
 
-vars :: Sudoku -> [Variable]
+vars :: Sudoku -> [Location]
 vars (Sudoku map) = Map.keys map
 
-varify :: Int -> [Set.Set Int] -> [Variable]
-varify i game = map (Variable . Location)  [i..length game + i - 1]
+varify :: Int -> [Set.Set Int] -> [Location]
+varify i game = [i..length game + i - 1]
 
 --------
 
@@ -119,9 +118,7 @@ ps x = Set.singleton . Data.Char.digitToInt $ x
 parseGame :: String -> Sudoku
 parseGame s =
   let domains = map ps s
-      dIdx = zip domains [0..]
-      alist = map (\(d,i) -> (Variable (Location i), d)) dIdx
-  in Sudoku $ Map.fromList alist
+  in Sudoku $ Map.fromList $ zip [0..] domains
 
 ---
 

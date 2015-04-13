@@ -2,8 +2,6 @@
 
 module CSP (
   propagateConstraints,
-  Variable(Variable),
-  Location(Location),
   Game(lookupVariable,updateGame),
   Constraint(Alldiff,ArcConstraint)
   ) where
@@ -13,21 +11,17 @@ import qualified Data.Map.Strict as Map
 
 import qualified Data.List as L
 
-data Location = Location Int deriving (Show, Ord, Eq)
+data Constraint variable a = ArcConstraint variable variable ([a] -> Bool)
+                | KConsistent variable ([a] -> Bool)
+                | Alldiff [variable]
 
-data Variable = Variable Location deriving (Show, Ord, Eq)
+class Game a b variable where
+  lookupVariable :: b -> variable -> Set.Set a
+  updateGame :: (variable,Set.Set a) -> b -> b
 
-data Constraint a = ArcConstraint Variable Variable ([a] -> Bool)
-                | KConsistent Variable ([a] -> Bool)
-                | Alldiff [Variable]
-
-class Game a b where
-  lookupVariable :: b -> Variable -> Set.Set a
-  updateGame :: (Variable,Set.Set a) -> b -> b
-
-instance Show (Constraint a) where
-  show (ArcConstraint d e _) = "<ArcConstraint " ++ (show d) ++ " & " ++ (show e) ++ ">"
-  show (Alldiff d) = "<Alldiff constraint " ++ (show d) ++ ">"
+-- instance Show (Constraint var a) where
+--   show (ArcConstraint d e _) = "<ArcConstraint " ++ (show d) ++ " & " ++ (show e) ++ ">"
+--   show (Alldiff d) = "<Alldiff constraint " ++ (show d) ++ ">"
 
 ----
 
@@ -48,9 +42,9 @@ instantiations :: [Set.Set a] -> [[a]]
 instantiations domains = combinations $ map Set.elems domains
 
 
-type Update a = [(Variable,Set.Set a)]
+type Update var a = [(var,Set.Set a)]
 
-propagate :: (Game a game, Ord a) => Constraint a -> game -> Update a
+propagate :: (Game a game var, Ord a) => Constraint var a -> game -> Update var a
 propagate (ArcConstraint va vb fn) game =
   let da = CSP.lookupVariable game va
       db = CSP.lookupVariable game vb
@@ -94,13 +88,13 @@ isSingleton a = Set.size a == 1
 
 ----------
 
-propagateConstraints :: (Ord a, Game a game) => [Constraint a] -> game -> game
+propagateConstraints :: (Ord a, Game a game var) => [Constraint var a] -> game -> game
 propagateConstraints [] game = game
 propagateConstraints (c:cs) game = let u = propagate c game
                                        game' = update game u
                                    in propagateConstraints cs game'
 
-update :: Game a game => game -> Update a -> game
+update :: Game a game var => game -> Update var a -> game
 update game [] = game
 update game (u:us) = let game' = updateGame u game
                      in update game' us
