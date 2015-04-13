@@ -17,20 +17,20 @@ data Location = Location Int deriving (Show, Ord, Eq)
 
 data Variable = Variable Location deriving (Show, Ord, Eq)
 
-data Constraint = ArcConstraint Variable Variable ([Int] -> Bool)
-                | KConsistent Variable ([Int] -> Bool)
+data Constraint a = ArcConstraint Variable Variable ([a] -> Bool)
+                | KConsistent Variable ([a] -> Bool)
                 | Alldiff [Variable]
 
 
-data Domain = Domain (Set.Set Int)
+data Domain a = Domain (Set.Set a)
             | Empty
             deriving (Show, Eq)
 
-type Game = Map.Map Variable Domain
+type Game a = Map.Map Variable (Domain a)
 
 
 
-instance Show Constraint where
+instance Show (Constraint a) where
   show (ArcConstraint d e _) = "<ArcConstraint " ++ (show d) ++ " & " ++ (show e) ++ ">"
   show (Alldiff d) = "<Alldiff constraint " ++ (show d) ++ ">"
 
@@ -47,16 +47,16 @@ _combinations out (i:is) =
 combinations :: [[a]] -> [[a]]
 combinations = _combinations [[]]
 
-values :: Domain -> [Int]
+values :: Domain a -> [a]
 values (Domain set) = Set.elems set
 
-instantiations :: [Domain] -> [[Int]]
+instantiations :: [Domain a] -> [[a]]
 instantiations domains = combinations $ map values domains
 
 
-type Update = [(Variable,Domain)]
+type Update a = [(Variable,Domain a)]
 
-propagate :: Constraint -> Game -> Update
+propagate :: Ord a => Constraint a -> Game a -> Update a
 propagate (ArcConstraint va vb fn) game =
   let da = lookupDomain game va
       db = lookupDomain game vb
@@ -100,25 +100,25 @@ isSingleton a = Set.size a == 1
 
 ----------
 
-propagateConstraints :: [Constraint] -> Game -> Game
+propagateConstraints :: Ord a => [Constraint a] -> Game a -> Game a
 propagateConstraints [] game = game
 propagateConstraints (c:cs) game = let u = propagate c game
                                        game' = update game u
                                    in propagateConstraints cs game'
 
-lookupDomain :: Game -> Variable -> Domain
+lookupDomain :: Game a -> Variable -> Domain a
 lookupDomain = (Map.!)
 
 
-domainFromList :: [Int] -> Domain
+domainFromList :: Ord a => [a] -> Domain a
 domainFromList [] = Empty
 domainFromList x = Domain $ Set.fromList x
 
 
-update :: Game -> Update -> Game
+update :: Game a -> Update a -> Game a
 update game [] = game
 update game (u:us) = let game' = updateOne u game
                      in update game' us
 
-updateOne :: (Variable,Domain) -> Game -> Game
+updateOne :: (Variable,Domain a) -> Game a -> Game a
 updateOne (variable,domain) game = Map.insert variable domain game
