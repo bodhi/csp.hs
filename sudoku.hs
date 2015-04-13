@@ -1,4 +1,5 @@
 import qualified Data.Set as Set
+import qualified Data.Map.Strict as Map
 import Data.List as List
 import Data.Char
 
@@ -8,9 +9,9 @@ data Domain = Domain (Set.Set Int)
 
 type Row = Int
 type Col = Int
-data Location = Location Int deriving Show
+data Location = Location Int deriving (Show, Ord, Eq)
 
-data Variable = Variable Location deriving Show
+data Variable = Variable Location deriving (Show, Ord, Eq)
 
 data Constraint = ArcConstraint Variable Variable ([Int] -> Bool)
                 | KConsistent [Variable] ([Int] -> Bool)
@@ -21,16 +22,16 @@ instance Show Constraint where
   show (Alldiff d) = "<Alldiff constraint " ++ (show d) ++ ">"
 
 -- fanOut [[1,2,3], [2,3,4]] 5 = [[1,2,3,5], [2,3,4,5]]
-fanout :: [[Int]] -> Int -> [[Int]]
+fanout :: [[a]] -> a -> [[a]]
 fanout input suffix = map (\k -> k ++ [suffix]) input
 
-_combinations :: [[Int]] -> [[Int]] -> [[Int]]
+_combinations :: [[a]] -> [[a]] -> [[a]]
 _combinations out [] = out
 _combinations out (i:is) =
   let out' = concatMap (fanout out) i
   in _combinations out' is
 
-combinations :: [[Int]] -> [[Int]]
+combinations :: [[a]] -> [[a]]
 combinations = _combinations [[]]
 
 values :: Domain -> [Int]
@@ -52,26 +53,6 @@ arcConstraint (a, b) = ArcConstraint a b neq
 
 -------
 
-vars :: Game -> [Variable]
-vars = varify 0
-
-varify :: Int -> [Domain] -> [Variable]
-varify i game = map (Variable . Location)  [i..length game + i - 1]
-
---------
-
--- _arcConstrainRows :: [[Variable]] -> [Constraint]
--- _arcConstrainRows [] = []
--- _arcConstrainRows (r:rs) = let result = arcConstraints r
---                            in result ++ _arcConstrainRows rs
-
--- arcConstrainRows :: [Variable] -> [Constraint]
--- arcConstrainRows game = _arcConstrainRows 0 $ rows $ varify game
-
--- arcConstrainCols :: [Variable] -> [Constraint]
--- arcConstrainCols game = _arcConstrainRows 0 $ cols $ varify game
-
-
 rows :: [a] -> [[a]]
 rows = splitInto 9
 
@@ -89,8 +70,6 @@ splitInto _ [] = []
 splitInto i a = let (first,rest) = splitAt i a
                 in [first] ++ splitInto i rest
 
-
-
 flatten :: [[a]] -> [a]
 flatten = foldl (++) []
 
@@ -105,42 +84,41 @@ propagate (ArcConstraint va vb fn) game =
   in [(va, da'), (vb, db')]
 
 propagate (Alldiff variables) game =
-  let domains = map (lookupDomain game) variables
-      (singletons,vars) = partition (\(v,d) -> isSingleton d) $ zip variables domains
-      toRemove = concatMap (\(v,Domain d) -> Set.elems d) singletons
-      removeSingletons = without toRemove
-      simplified = map removeSingletons domains
-      diffed = allDiff vars
-  in diffed
-
-
--- eg. [4,6,9],[6,9],[6,9] -> [4],[6,9],[6,9]
-allDiff :: Update -> Update
-allDiff vd
-  | combinations <= 5000 = 
-    let domains = map (\(v, d) -> d) vd
-        cases = instantiations domains
-        allDiffCases = filter (\l -> Set.size (Set.fromList l) == length l) cases
-        domainLists = transpose allDiffCases
-        newDomains = map domainFromList domainLists
-    in map (\((v,oldDomain),newDomain) -> (v,newDomain)) $ zip vd newDomains
-  | otherwise = vd
-  where combinations = foldl (*) 1 $ map (\(v,(Domain s)) -> Set.size s) vd
-
-without :: [Int] -> Domain -> Domain
-without is (Domain d)
-  | isSingleton (Domain d) = (Domain d)
-  | otherwise = Domain $ foldl (\s i -> Set.delete i s) d is
-
-isSingleton :: Domain -> Bool
-isSingleton (Domain d) = Set.size d == 1
-
-lookupDomain :: Game -> Variable -> Domain
-lookupDomain game (Variable (Location l)) = game !! l
+  let diffed = allDiff $ map (\(Domain s) -> s) $ map (lookupDomain game) variables
+  in zipWith (\var set -> (var,Domain set)) variables diffed
 
 domainFromList :: [Int] -> Domain
 domainFromList [] = Empty
 domainFromList x = Domain $ Set.fromList x
+
+-- eg. [4,6,9],[6,9],[6,9] -> [4],[6,9],[6,9]
+allDiff :: Ord a => [Set.Set a] -> [Set.Set a]
+allDiff vd =
+  let vd' = stripSingletons vd
+      uniquifyFn = uniquify vd'
+  in map (\s -> nonEmpty (uniquifyFn s) s) vd'
+
+nonEmpty :: Set.Set a -> Set.Set a -> Set.Set a
+nonEmpty x y
+  | empty = y
+  | otherwise = x
+  where empty = Set.null x
+
+-- [4,6,9] -> [4,6,9], [6,9], [6,8,9] -> [4]
+uniquify :: Ord a => [Set.Set a] -> Set.Set a -> Set.Set a
+uniquify list set = let otherSets = delete set list
+                        superset = foldl Set.union Set.empty otherSets
+                    in Set.difference set superset
+
+-- [4],[4,5,6],[4,6,7] -> [4],[5,6],[6,7]
+stripSingletons :: Ord a => [Set.Set a] -> [Set.Set a]
+stripSingletons sets =
+  let singletons = foldr Set.union Set.empty $ filter isSingleton sets
+      strip = \set -> nonEmpty (Set.difference set singletons) set
+  in map strip sets
+
+isSingleton :: Set.Set a -> Bool
+isSingleton a = Set.size a == 1
 
 ----------
 
@@ -151,7 +129,7 @@ propagateConstraints (c:cs) game = let u = propagate c game
                                    in propagateConstraints cs game'
 
 constrain :: Game -> [Constraint]
-constrain game = _adConstrain game ++ _arcConstrain game
+constrain game = _adConstrain game -- ++ _adConstrain game
 _adConstrain game = let var = vars game
              in map Alldiff (rows var ++ cols var ++ blocks var)
 
@@ -165,8 +143,7 @@ update game (u:us) = let game' = updateOne u game
                      in update game' us
 
 updateOne :: (Variable,Domain) -> Game -> Game
-updateOne (Variable (Location l),domain) game = let (pre,_:post) = splitAt l game
-                                    in pre ++ (domain:post)
+updateOne (variable,domain) game = Map.insert variable domain game
 
 ----------
 
@@ -183,15 +160,18 @@ solveGame game = let constraints = constrain game
 
 -------------------
 
-type Game = [Domain]
+type Game = Map.Map Variable Domain
 
--- update :: Variable -> Game -> Game
--- update (Variable domain (Location l)) game = let (pre,_:post) = splitAt l game
---                                               in pre ++ (domain:post)
+vars :: Game -> [Variable]
+vars = Map.keys
 
--- apply :: Constraint -> Game -> Game
--- apply (ArcConstraint x y _) game = let g1 = update x game
---                                    in update y g1
+varify :: Int -> [Domain] -> [Variable]
+varify i game = map (Variable . Location)  [i..length game + i - 1]
+
+--------
+
+lookupDomain :: Game -> Variable -> Domain
+lookupDomain = (Map.!)
 
 freshDomain = Domain $ Set.fromList [1..9]
 setDomain = Domain $ Set.fromList [4]
@@ -221,7 +201,11 @@ ps '.' = freshDomain
 ps x = Domain . Set.singleton . Data.Char.digitToInt $ x
 
 parseGame :: String -> Game
-parseGame s = map ps s
+parseGame s =
+  let domains = map ps s
+      dIdx = zip domains [0..]
+      alist = map (\(d,i) -> (Variable (Location i), d)) dIdx
+  in Map.fromList alist
 
 ---
 
@@ -235,7 +219,9 @@ strD (Domain d)
 
 
 
-showG game = let rows' = rows game
+showG game = let vars' = vars game
+                 domains = map (lookupDomain game) vars'
+                 rows' = rows domains
                  showRow = \row -> (map strD row) ++ "\n"
              in concatMap showRow rows'
 
@@ -243,6 +229,4 @@ putG = putStrLn . showG
 
 -------------------
 
-result = combinations [[1,2,3],[1],[1,2]]
---main = putStrLn . show $ parse inputrow
 main = putG $ solveGame game
