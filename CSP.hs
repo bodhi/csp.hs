@@ -7,12 +7,11 @@ module CSP (
   ) where
 
 import qualified Data.Set as Set
-import qualified Data.Map.Strict as Map
 
 import qualified Data.List as L
 
 data Constraint variable a = ArcConstraint variable variable ([a] -> Bool)
-                | KConsistent variable ([a] -> Bool)
+--                | KConsistent variable ([a] -> Bool)
                 | Alldiff [variable]
 
 class Game a b variable where
