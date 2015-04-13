@@ -14,23 +14,25 @@ type Location = Int
 
 data Sudoku = Sudoku (Map.Map Location (Set.Set Int)) deriving Eq
 
+type SudokuConstraint = Constraint Location Int
+
 -- class Game a b where
 --   lookup :: a -> Variable -> Set.Set b
 --   updateGame :: (Variable,Set.Set b) -> a -> a
 
-instance Game Int Sudoku Location where
+instance Game Location Int Sudoku where
   lookupVariable (Sudoku map) variable = map Map.! variable
   updateGame (variable,domain) (Sudoku map) = Sudoku $ Map.insert variable domain map
 
 neq :: [Int] -> Bool
 neq (x:y:[]) = x /= y
 
-arcConstraints :: [Location] -> [Constraint Location Int]
+arcConstraints :: [Location] -> [SudokuConstraint]
 arcConstraints (d:[]) = []
 arcConstraints (d:ds) = let pairs = [(d, x) | x <- ds]
                         in map arcConstraint pairs ++ arcConstraints ds
 
-arcConstraint :: (Location, Location) -> Constraint Location Int
+arcConstraint :: (Location, Location) -> SudokuConstraint
 arcConstraint (a, b) = ArcConstraint a b neq
 
 -------
@@ -55,7 +57,7 @@ splitInto i a = let (first,rest) = splitAt i a
 flatten :: [[a]] -> [a]
 flatten = foldl (++) []
 
-constrain :: Sudoku -> [Constraint Location Int]
+constrain :: Sudoku -> [SudokuConstraint]
 constrain game = _adConstrain game -- ++ _adConstrain game
 _adConstrain game = let var = vars game
              in map Alldiff (rows var ++ cols var ++ blocks var)
@@ -66,7 +68,7 @@ _arcConstrain game = let var = vars game
 
 ----------
 
-solve :: [Constraint Location Int] -> Sudoku -> Sudoku
+solve :: [SudokuConstraint] -> Sudoku -> Sudoku
 solve constraints game
   | result == game = game
   | otherwise = solve constraints result

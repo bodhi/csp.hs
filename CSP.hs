@@ -10,13 +10,13 @@ import qualified Data.Set as Set
 
 import qualified Data.List as L
 
-data Constraint variable a = ArcConstraint variable variable ([a] -> Bool)
+data Constraint variable value = ArcConstraint variable variable ([value] -> Bool)
 --                | KConsistent variable ([a] -> Bool)
                 | Alldiff [variable]
 
-class Game a b variable where
-  lookupVariable :: b -> variable -> Set.Set a
-  updateGame :: (variable,Set.Set a) -> b -> b
+class Game variable value game where
+  lookupVariable :: game -> variable -> Set.Set value
+  updateGame :: (variable,Set.Set value) -> game -> game
 
 -- instance Show (Constraint var a) where
 --   show (ArcConstraint d e _) = "<ArcConstraint " ++ (show d) ++ " & " ++ (show e) ++ ">"
@@ -41,9 +41,9 @@ instantiations :: [Set.Set a] -> [[a]]
 instantiations domains = combinations $ map Set.elems domains
 
 
-type Update var a = [(var,Set.Set a)]
+type Update variable value = [(variable,Set.Set value)]
 
-propagate :: (Game a game var, Ord a) => Constraint var a -> game -> Update var a
+propagate :: (Game variable value game, Ord value) => Constraint variable value -> game -> Update variable value
 propagate (ArcConstraint va vb fn) game =
   let da = CSP.lookupVariable game va
       db = CSP.lookupVariable game vb
@@ -87,13 +87,13 @@ isSingleton a = Set.size a == 1
 
 ----------
 
-propagateConstraints :: (Ord a, Game a game var) => [Constraint var a] -> game -> game
+propagateConstraints :: (Ord value, Game variable value game) => [Constraint variable value] -> game -> game
 propagateConstraints [] game = game
 propagateConstraints (c:cs) game = let u = propagate c game
                                        game' = update game u
                                    in propagateConstraints cs game'
 
-update :: Game a game var => game -> Update var a -> game
+update :: Game variable value game => game -> Update variable value -> game
 update game [] = game
 update game (u:us) = let game' = updateGame u game
                      in update game' us
