@@ -1,17 +1,18 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
+
 module CSP (
   propagateConstraints,
-  lookupDomain,
   Variable(Variable),
   Location(Location),
-  Game,
-  Domain(Domain),
+  Game(lookupVariable,updateGame),
+  Domain,
   Constraint(Alldiff,ArcConstraint)
   ) where
 
 import qualified Data.Set as Set
 import qualified Data.Map.Strict as Map
 
-import Data.List as List
+import qualified Data.List as L
 
 data Location = Location Int deriving (Show, Ord, Eq)
 
@@ -21,12 +22,18 @@ data Constraint a = ArcConstraint Variable Variable ([a] -> Bool)
                 | KConsistent Variable ([a] -> Bool)
                 | Alldiff [Variable]
 
+type Domain = Set.Set
 
-data Domain a = Domain (Set.Set a)
-            | Empty
-            deriving (Show, Eq)
+-- data Domain a = Domain (Set.Set a)
+--             | Empty
+--             deriving (Show, Eq)
 
-type Game a = Map.Map Variable (Domain a)
+
+class Game a b where
+  lookupVariable :: b -> Variable -> Domain a
+  updateGame :: (Variable,Domain a) -> b -> b
+
+--type Game a = Map.Map Variable (Domain a)
 
 
 
@@ -47,8 +54,8 @@ _combinations out (i:is) =
 combinations :: [[a]] -> [[a]]
 combinations = _combinations [[]]
 
-values :: Domain a -> [a]
-values (Domain set) = Set.elems set
+values :: Set.Set a -> [a]
+values = Set.elems
 
 instantiations :: [Domain a] -> [[a]]
 instantiations domains = combinations $ map values domains
@@ -56,17 +63,17 @@ instantiations domains = combinations $ map values domains
 
 type Update a = [(Variable,Domain a)]
 
-propagate :: Ord a => Constraint a -> Game a -> Update a
+propagate :: (Game a game, Ord a) => Constraint a -> game -> Update a
 propagate (ArcConstraint va vb fn) game =
-  let da = lookupDomain game va
-      db = lookupDomain game vb
-      validDomains = transpose $ filter fn $ instantiations [da, db]
+  let da = CSP.lookupVariable game va
+      db = CSP.lookupVariable game vb
+      validDomains = L.transpose $ filter fn $ instantiations [da, db]
       (da':db':[]) = map domainFromList validDomains
   in [(va, da'), (vb, db')]
 
 propagate (Alldiff variables) game =
-  let diffed = allDiff $ map (\(Domain s) -> s) $ map (lookupDomain game) variables
-  in zipWith (\var set -> (var,Domain set)) variables diffed
+  let diffed = allDiff $ map (CSP.lookupVariable game) variables
+  in zip variables diffed
 
      
 -- eg. [4,6,9],[6,9],[6,9] -> [4],[6,9],[6,9]
@@ -84,7 +91,7 @@ nonEmpty x y
 
 -- [4,6,9] -> [4,6,9], [6,9], [6,8,9] -> [4]
 uniquify :: Ord a => [Set.Set a] -> Set.Set a -> Set.Set a
-uniquify list set = let otherSets = delete set list
+uniquify list set = let otherSets = L.delete set list
                         superset = foldl Set.union Set.empty otherSets
                     in Set.difference set superset
 
@@ -100,25 +107,17 @@ isSingleton a = Set.size a == 1
 
 ----------
 
-propagateConstraints :: Ord a => [Constraint a] -> Game a -> Game a
+propagateConstraints :: (Ord a, Game a game) => [Constraint a] -> game -> game
 propagateConstraints [] game = game
 propagateConstraints (c:cs) game = let u = propagate c game
                                        game' = update game u
                                    in propagateConstraints cs game'
 
-lookupDomain :: Game a -> Variable -> Domain a
-lookupDomain = (Map.!)
-
-
 domainFromList :: Ord a => [a] -> Domain a
-domainFromList [] = Empty
-domainFromList x = Domain $ Set.fromList x
+domainFromList [] = Set.empty
+domainFromList x = Set.fromList x
 
-
-update :: Game a -> Update a -> Game a
+update :: Game a game => game -> Update a -> game
 update game [] = game
-update game (u:us) = let game' = updateOne u game
+update game (u:us) = let game' = updateGame u game
                      in update game' us
-
-updateOne :: (Variable,Domain a) -> Game a -> Game a
-updateOne (variable,domain) game = Map.insert variable domain game
