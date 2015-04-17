@@ -1,12 +1,14 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
-
 module CSP (
   propagateConstraints,
-  Game(lookupVariable,updateGame),
-  Constraint(..)
+  Game,
+  Constraint(..),
+  variables,
+  lookupVariable,
+  makeGame
   ) where
 
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 import qualified Data.List as L
 
@@ -16,9 +18,23 @@ data Constraint variable value =
   | Alldiff [variable]
   | KVarConstraint [variable] ([(variable,value)] -> Bool)
 
-class Game variable value game where
-  lookupVariable :: game -> variable -> Set.Set value
-  updateGame :: (variable,Set.Set value) -> game -> game
+data Game variable value = Game (Map.Map variable (Set.Set value)) deriving Eq
+
+makeGame :: (Ord variable, Ord value) => [(variable,[value])] -> Game variable value
+makeGame varsVals = Game $ Map.fromList $ map (\(var, vals) -> (var, Set.fromList vals)) varsVals
+
+lookupVariable :: Ord variable => Game variable value -> variable -> Set.Set value
+lookupVariable (Game map) variable = map Map.! variable
+
+updateGame :: Ord variable => (variable,Set.Set value) -> Game variable value -> Game variable value
+updateGame (variable,domain) (Game map) = Game $ Map.insert variable domain map
+
+variables :: Game variable value -> [variable]
+variables (Game map) = Map.keys map
+
+instance (Show variable, Ord variable, Show value) => Show (Game variable value) where
+  show eqn = let alpha = variables eqn
+             in foldr (\v b -> b ++ show v ++ ": " ++ show (Set.elems $ lookupVariable eqn v) ++ "\n") "" alpha
 
 -- instance Show (Constraint var a) where
 --   show (ArcConstraint d e _) = "<ArcConstraint " ++ (show d) ++ " & " ++ (show e) ++ ">"
@@ -45,7 +61,7 @@ instantiations domains = combinations $ map Set.elems domains
 
 type Update variable value = [(variable,Set.Set value)]
 
-propagate :: (Game variable value game, Ord value) => Constraint variable value -> game -> Update variable value
+propagate :: (Ord value, Ord variable) => Constraint variable value -> Game variable value -> Update variable value
 propagate (ArcConstraint va vb fn) game =
   let da = CSP.lookupVariable game va
       db = CSP.lookupVariable game vb
@@ -108,13 +124,13 @@ isSingleton a = Set.size a == 1
 
 ----------
 
-propagateConstraints :: (Ord value, Game variable value game) => [Constraint variable value] -> game -> game
+propagateConstraints :: (Ord value, Ord variable) => [Constraint variable value] -> Game variable value -> Game variable value
 propagateConstraints [] game = game
 propagateConstraints (c:cs) game = let u = propagate c game
                                        game' = update game u
                                    in propagateConstraints cs game'
 
-update :: Game variable value game => game -> Update variable value -> game
+update :: Ord variable => Game variable value -> Update variable value -> Game variable value
 update game [] = game
 update game (u:us) = let game' = updateGame u game
                      in update game' us

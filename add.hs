@@ -1,5 +1,3 @@
-{-# LANGUAGE MultiParamTypeClasses,TypeSynonymInstances #-}
-
 import CSP
 
 import qualified Data.Set as Set
@@ -7,7 +5,7 @@ import qualified Data.Map as Map
 
 data Alphabet = S | E | N | D | M | O | R | Y | T | W | F | U | Null | Carry Int deriving (Eq, Ord, Show)
 
-data Eqn = Eqn (Map.Map Alphabet (Set.Set Int)) deriving Eq
+type Eqn = Game Alphabet Int
 
 type EqnConstraint = Constraint Alphabet Int
 
@@ -18,16 +16,6 @@ eqn2 (s:e:n:d:m:o:r:y:[]) =
                 (s * 1000 + e * 100 + n * 10 + d)
               + (m * 1000 + o * 100 + r * 10 + e)
  == (m * 10000 + o * 1000 + n * 100 + e * 10 + y)
-
-
-
-instance Game Alphabet Int Eqn where
-  lookupVariable (Eqn map) variable = map Map.! variable
-  updateGame (variable,domain) (Eqn map) = Eqn $ Map.insert variable domain map
-
-instance Show Eqn where
-  show (Eqn map) = Map.foldWithKey (\k v b -> b ++ show k ++ ":" ++ show (Set.elems v) ++ "\n") "" map
-
 
 
 --   SEND
@@ -87,7 +75,7 @@ alphaDomain = map (flip (,) [0..9]) (drop 0 alphabet)
 
 game :: Eqn
 game = let eqnData = (Null,[0]) : (alphaDomain ++ carries)
-       in Eqn $ Map.fromList $ map (\(v, d) -> (v, Set.fromList d)) eqnData
+       in makeGame eqnData
 
 --   SEND
 -- + MORE

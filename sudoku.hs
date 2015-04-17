@@ -1,28 +1,24 @@
-{-# LANGUAGE MultiParamTypeClasses,TypeSynonymInstances #-}
+{-# LANGUAGE OverlappingInstances,TypeSynonymInstances,FlexibleInstances #-}
 
 import Data.List as List
-import qualified Data.Map.Strict as Map
 import Data.Char
 import qualified Data.Set as Set
 
-import CSP
+import qualified CSP
 
 type Row = Int
 type Col = Int
 
 type Location = Int
 
-data Sudoku = Sudoku (Map.Map Location (Set.Set Int)) deriving Eq
+type Sudoku = CSP.Game Location Int
 
-type SudokuConstraint = Constraint Location Int
+type SudokuConstraint = CSP.Constraint Location Int
 
 -- class Game a b where
 --   lookup :: a -> Variable -> Set.Set b
 --   updateGame :: (Variable,Set.Set b) -> a -> a
 
-instance Game Location Int Sudoku where
-  lookupVariable (Sudoku map) variable = map Map.! variable
-  updateGame (variable,domain) (Sudoku map) = Sudoku $ Map.insert variable domain map
 
 neq :: Eq a => [a] -> Bool
 neq (x:y:[]) = x /= y
@@ -35,7 +31,7 @@ arcConstraints :: [Location] -> [SudokuConstraint]
 arcConstraints locations = map arcConstraint $ pairs locations
 
 arcConstraint :: (Location, Location) -> SudokuConstraint
-arcConstraint (a, b) = ArcConstraint a b neq
+arcConstraint (a, b) = CSP.ArcConstraint a b neq
 
 -------
 
@@ -62,7 +58,7 @@ flatten = foldl (++) []
 constrain :: Sudoku -> [SudokuConstraint]
 constrain game = _adConstrain game -- ++ _adConstrain game
 _adConstrain game = let var = vars game
-             in map Alldiff (rows var ++ cols var ++ blocks var)
+             in map CSP.Alldiff (rows var ++ cols var ++ blocks var)
 
 _arcConstrain game = let var = vars game
             in concatMap arcConstraints (rows var ++ cols var ++ blocks var)
@@ -74,7 +70,7 @@ solve :: [SudokuConstraint] -> Sudoku -> Sudoku
 solve constraints game
   | result == game = game
   | otherwise = solve constraints result
-  where result = propagateConstraints constraints game
+  where result = CSP.propagateConstraints constraints game
 
 
 solveGame :: Sudoku -> Sudoku
@@ -84,22 +80,22 @@ solveGame game = let constraints = constrain game
 -------------------
 
 vars :: Sudoku -> [Location]
-vars (Sudoku map) = Map.keys map
+vars sudoku = [1..81]
 
 --------
 
 
-freshDomain = Set.fromList [1..9]
+freshDomain = [1..9]
 setDomain = Set.fromList [4]
 
 inputrow :: [Maybe Int]
 inputrow = [Just 1, Nothing, Nothing, Just 7, Just 3, Nothing, Nothing, Nothing, Nothing]
 
-parseCell :: Maybe Int -> Set.Set Int
+parseCell :: Maybe Int -> [Int]
 parseCell Nothing = freshDomain
-parseCell (Just x) = Set.singleton x
+parseCell (Just x) = [x]
 
-parse :: [Maybe Int] -> [Set.Set Int]
+parse :: [Maybe Int] -> [[Int]]
 parse x = map parseCell x
 
 inputgame = "1..73....\
@@ -112,14 +108,14 @@ inputgame = "1..73....\
 \...5.....\
 \53....6.."
 
-ps :: Char -> Set.Set Int
+ps :: Char -> [Int]
 ps '.' = freshDomain
-ps x = Set.singleton . Data.Char.digitToInt $ x
+ps x = [Data.Char.digitToInt $ x]
 
 parseGame :: String -> Sudoku
 parseGame s =
   let domains = map ps s
-  in Sudoku $ Map.fromList $ zip [0..] domains
+  in CSP.makeGame $ zip [1..] domains
 
 ---
 
@@ -132,14 +128,15 @@ strD d
   where size = Set.size d
 
 
+instance Show Sudoku where
+--instance (Show variable, Ord variable, Show value) => Show (CSP.Game Location Int) where
+  show game = let vars' = vars game
+                  domains = map (CSP.lookupVariable game) vars'
+                  rows' = rows domains
+                  showRow = \row -> (map strD row) ++ "\n"
+              in concatMap showRow rows'
 
-showG game = let vars' = vars game
-                 domains = map (CSP.lookupVariable game) vars'
-                 rows' = rows domains
-                 showRow = \row -> (map strD row) ++ "\n"
-             in concatMap showRow rows'
-
-putG = putStrLn . showG
+putG = putStrLn . show
 
 -------------------
 
