@@ -24,13 +24,15 @@ instance Game Location Int Sudoku where
   lookupVariable (Sudoku map) variable = map Map.! variable
   updateGame (variable,domain) (Sudoku map) = Sudoku $ Map.insert variable domain map
 
-neq :: [Int] -> Bool
+neq :: Eq a => [a] -> Bool
 neq (x:y:[]) = x /= y
 
+pairs :: [a] -> [(a,a)]
+pairs (p:[]) = []
+pairs (p:ps) = [(p,s) | s <- ps] ++ pairs ps
+
 arcConstraints :: [Location] -> [SudokuConstraint]
-arcConstraints (d:[]) = []
-arcConstraints (d:ds) = let pairs = [(d, x) | x <- ds]
-                        in map arcConstraint pairs ++ arcConstraints ds
+arcConstraints locations = map arcConstraint $ pairs locations
 
 arcConstraint :: (Location, Location) -> SudokuConstraint
 arcConstraint (a, b) = ArcConstraint a b neq
@@ -83,9 +85,6 @@ solveGame game = let constraints = constrain game
 
 vars :: Sudoku -> [Location]
 vars (Sudoku map) = Map.keys map
-
-varify :: Int -> [Set.Set Int] -> [Location]
-varify i game = [i..length game + i - 1]
 
 --------
 
