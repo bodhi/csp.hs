@@ -3,16 +3,18 @@
 module CSP (
   propagateConstraints,
   Game(lookupVariable,updateGame),
-  Constraint(Alldiff,ArcConstraint)
+  Constraint(..)
   ) where
 
 import qualified Data.Set as Set
 
 import qualified Data.List as L
 
-data Constraint variable value = ArcConstraint variable variable ([value] -> Bool)
---                | KConsistent variable ([a] -> Bool)
-                | Alldiff [variable]
+data Constraint variable value =
+  ArcConstraint variable variable ([value] -> Bool)
+  | KConstraint [variable] ([value] -> Bool)
+  | Alldiff [variable]
+  | KVarConstraint [variable] ([(variable,value)] -> Bool)
 
 class Game variable value game where
   lookupVariable :: game -> variable -> Set.Set value
@@ -51,11 +53,26 @@ propagate (ArcConstraint va vb fn) game =
       (da':db':[]) = map Set.fromList validDomains
   in [(va, da'), (vb, db')]
 
+propagate (KConstraint vars fn) game =
+  let domains = map (CSP.lookupVariable game) vars
+      validDomains = L.transpose $ filter fn $ instantiations domains
+      newDomains = map Set.fromList validDomains
+  in zip vars newDomains
+
 propagate (Alldiff variables) game =
   let diffed = allDiff $ map (CSP.lookupVariable game) variables
   in zip variables diffed
 
-     
+propagate (KVarConstraint vars fn) game =
+  let domains = map (CSP.lookupVariable game) vars -- [value]
+      validValues = L.transpose $ filter fn $ map (zip vars) $ instantiations domains -- [[(variable, value)]]
+      rawData = map unzip validValues -- [[[variable],[value]]]
+       -- [([variable],[value])] -> [(variable, Set.Set value)]
+      updates = map (\(vars,vals) -> (head vars, Set.fromList vals)) rawData
+--      newUpdates = map (\(v, vals) -> (v, Set.fromList vals)) validUpdates
+  in updates
+
+
 -- eg. [4,6,9],[6,9],[6,9] -> [4],[6,9],[6,9]
 allDiff :: Ord a => [Set.Set a] -> [Set.Set a]
 allDiff vd =
@@ -71,9 +88,13 @@ nonEmpty x y
 
 -- [4,6,9] -> [4,6,9], [6,9], [6,8,9] -> [4]
 uniquify :: Ord a => [Set.Set a] -> Set.Set a -> Set.Set a
-uniquify list set = let otherSets = L.delete set list
-                        superset = foldl Set.union Set.empty otherSets
-                    in Set.difference set superset
+uniquify list set
+  | vals <= vars = let otherSets = L.delete set list
+                       superset = foldl Set.union Set.empty otherSets
+                   in Set.difference set superset
+  | otherwise = set
+  where vars = length list
+        vals = Set.size $ foldr Set.union Set.empty list
 
 -- [4],[4,5,6],[4,6,7] -> [4],[5,6],[6,7]
 stripSingletons :: Ord a => [Set.Set a] -> [Set.Set a]
