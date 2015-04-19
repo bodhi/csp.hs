@@ -100,11 +100,11 @@ nonEmpty x y
 uniquify :: Ord a => [Set.Set a] -> Set.Set a -> Set.Set a
 uniquify list set
   | vals <= vars = let otherSets = L.delete set list
-                       superset = foldl Set.union Set.empty otherSets
+                       superset = Set.unions otherSets
                    in Set.difference set superset
   | otherwise = set
   where vars = length list
-        vals = Set.size $ foldr Set.union Set.empty list
+        vals = Set.size $ Set.unions list
 
 -- [4],[4,5,6],[4,6,7] -> [4],[5,6],[6,7]
 stripSingletons :: Ord a => [Set.Set a] -> [Set.Set a]
