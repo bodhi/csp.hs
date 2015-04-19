@@ -1,4 +1,4 @@
-{-# LANGUAGE OverlappingInstances,TypeSynonymInstances,FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 import Data.List as List
 import Data.Char
@@ -116,7 +116,6 @@ strD d
 
 
 instance Show Sudoku where
---instance (Show variable, Ord variable, Show value) => Show (CSP.Game Location Int) where
   show game = let vars' = vars game
                   domains = map (CSP.lookupVariable game) vars'
                   rows' = rows domains

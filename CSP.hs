@@ -31,7 +31,7 @@ updateGame (variable,domain) (Game map) = Game $ Map.insert variable domain map
 variables :: Game variable value -> [variable]
 variables (Game map) = Map.keys map
 
-instance (Show variable, Ord variable, Show value) => Show (Game variable value) where
+instance {-# OVERLAPPABLE #-} (Show variable, Ord variable, Show value) => Show (Game variable value) where
   show eqn = let alpha = variables eqn
              in foldr (\v b -> b ++ show v ++ ": " ++ show (Set.elems $ lookupVariable eqn v) ++ "\n") "" alpha
 
