@@ -66,19 +66,6 @@ _arcConstrain game = let var = vars game
 
 ----------
 
-solve :: [SudokuConstraint] -> Sudoku -> Sudoku
-solve constraints game
-  | result == game = game
-  | otherwise = solve constraints result
-  where result = CSP.propagateConstraints constraints game
-
-
-solveGame :: Sudoku -> Sudoku
-solveGame game = let constraints = constrain game
-                 in solve constraints game
-
--------------------
-
 vars :: Sudoku -> [Location]
 vars sudoku = [1..81]
 
@@ -136,8 +123,7 @@ instance Show Sudoku where
                   showRow = \row -> (map strD row) ++ "\n"
               in concatMap showRow rows'
 
-putG = putStrLn . show
-
 -------------------
 
-main = putG $ solveGame game
+constraints = constrain game
+main = putStrLn $ show $ CSP.solve constraints game

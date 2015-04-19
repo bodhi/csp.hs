@@ -1,10 +1,9 @@
 module CSP (
-  propagateConstraints,
+  makeGame,
+  solve,
+  lookupVariable,
   Game,
   Constraint(..),
-  variables,
-  lookupVariable,
-  makeGame
   ) where
 
 import qualified Data.Set as Set
@@ -58,35 +57,30 @@ combinations = _combinations [[]]
 instantiations :: [Set.Set a] -> [[a]]
 instantiations domains = combinations $ map Set.elems domains
 
-
 type Update variable value = [(variable,Set.Set value)]
 
-propagate :: (Ord value, Ord variable) => Constraint variable value -> Game variable value -> Update variable value
+propagate :: (Ord value, Ord variable) => Constraint variable value -> Game variable value -> [Update variable value]
 propagate (ArcConstraint va vb fn) game =
   let da = CSP.lookupVariable game va
       db = CSP.lookupVariable game vb
-      validDomains = L.transpose $ filter fn $ instantiations [da, db]
-      (da':db':[]) = map Set.fromList validDomains
-  in [(va, da'), (vb, db')]
+      validInstantiatons = filter fn $ instantiations [da, db]
+      instAsUpdate = \(valA:valB:[]) -> [(va, Set.singleton valA), (vb, Set.singleton valB)]
+      in map instAsUpdate validInstantiatons
 
 propagate (KConstraint vars fn) game =
   let domains = map (CSP.lookupVariable game) vars
-      validDomains = L.transpose $ filter fn $ instantiations domains
-      newDomains = map Set.fromList validDomains
-  in zip vars newDomains
+      validInstantiations = filter fn $ instantiations domains
+  in map (\inst -> zip vars $ map Set.singleton inst) validInstantiations
 
 propagate (Alldiff variables) game =
   let diffed = allDiff $ map (CSP.lookupVariable game) variables
-  in zip variables diffed
+  in [zip variables diffed]
 
 propagate (KVarConstraint vars fn) game =
-  let domains = map (CSP.lookupVariable game) vars -- [value]
-      validValues = L.transpose $ filter fn $ map (zip vars) $ instantiations domains -- [[(variable, value)]]
-      rawData = map unzip validValues -- [[[variable],[value]]]
-       -- [([variable],[value])] -> [(variable, Set.Set value)]
-      updates = map (\(vars,vals) -> (head vars, Set.fromList vals)) rawData
---      newUpdates = map (\(v, vals) -> (v, Set.fromList vals)) validUpdates
-  in updates
+  let domains = map (CSP.lookupVariable game) vars -- [Set.Set value]
+      validInstantiations = filter fn $ map (zip vars) $ instantiations domains -- [[(variable, value)]]
+      instAsUpdate = map (\(var, val) -> (var, Set.singleton val))
+  in map instAsUpdate  validInstantiations
 
 
 -- eg. [4,6,9],[6,9],[6,9] -> [4],[6,9],[6,9]
@@ -124,13 +118,36 @@ isSingleton a = Set.size a == 1
 
 ----------
 
-propagateConstraints :: (Ord value, Ord variable) => [Constraint variable value] -> Game variable value -> Game variable value
-propagateConstraints [] game = game
-propagateConstraints (c:cs) game = let u = propagate c game
-                                       game' = update game u
-                                   in propagateConstraints cs game'
+constrain :: (Ord variable, Ord value) => [Game variable value] -> Constraint variable value -> [Game variable value]
+constrain games constraint = concatMap (_propagate constraint) games
+
+flatten :: (Ord variable, Ord value) => [Game variable value] -> Game variable value
+flatten games =
+  let intersectValues = \left right -> Set.union left right
+  in Game $ Map.unionsWith intersectValues $ map (\(Game map) -> map) games
 
 update :: Ord variable => Game variable value -> Update variable value -> Game variable value
 update game [] = game
 update game (u:us) = let game' = updateGame u game
                      in update game' us
+
+_propagate :: (Ord variable, Ord value) => Constraint variable value -> Game variable value -> [Game variable value]
+_propagate constraint game =
+  let updates = propagate constraint game
+  in map (update game) updates
+
+-- Naive, uses all constraints, regardless of whether the domain of any of the variables has changed.
+_propagateConstraints [] games = games
+_propagateConstraints (c:cs) games = let games' = constrain games c
+                               in _propagateConstraints cs games'
+
+propagateConstraints :: (Ord value, Ord variable) => [Constraint variable value] -> Game variable value -> Game variable value
+propagateConstraints constraints game = flatten $ _propagateConstraints constraints [game]
+
+_solve constraints game
+  | result == game = game
+  | otherwise = _solve constraints result
+  where result = propagateConstraints constraints game
+
+solve :: (Ord variable, Ord value) => [Constraint variable value] -> Game variable value -> Game variable value
+solve = _solve
