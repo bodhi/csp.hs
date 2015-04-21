@@ -35,9 +35,11 @@ instance {-# OVERLAPPABLE #-} (Show variable, Ord variable, Show value) => Show 
   show eqn = let alpha = variables eqn
              in foldr (\v b -> b ++ show v ++ ": " ++ show (Set.elems $ lookupVariable eqn v) ++ "\n") "" alpha
 
--- instance Show (Constraint var a) where
---   show (ArcConstraint d e _) = "<ArcConstraint " ++ (show d) ++ " & " ++ (show e) ++ ">"
---   show (Alldiff d) = "<Alldiff constraint " ++ (show d) ++ ">"
+instance (Show variable, Show value) => Show (Constraint variable value) where
+  show (ArcConstraint d e _) = "<ArcConstraint " ++ (show d) ++ " & " ++ (show e) ++ ">"
+  show (Alldiff d) = "<Alldiff " ++ (show d) ++ ">"
+  show (KConstraint vars _) = "<KConstraint " ++ (show vars) ++ ">"
+  show (KVarConstraint vars _) = "<KVarConstraint " ++ (show vars) ++ ">"
 
 ----
 
