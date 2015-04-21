@@ -53,7 +53,7 @@ splitInto i a = let (first,rest) = splitAt i a
                 in [first] ++ splitInto i rest
 
 flatten :: [[a]] -> [a]
-flatten = foldl (++) []
+flatten = foldl1 (++)
 
 constrain :: Sudoku -> [SudokuConstraint]
 constrain game = _adConstrain game -- ++ _adConstrain game
